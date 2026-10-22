@@ -1,0 +1,90 @@
+# AIGC 内容方向产品经理。规则移植自 2026-10-10 的 classify.py。
+name: AIGC 内容方向产品经理
+
+cities: [北京, 上海, 杭州, 深圳, 广州, 苏州]
+
+# 2026-10-22 去掉了 9 个低产出词（AI平台、文生图、AI视频、短剧、AI应用、AI剪辑、
+# 视频生成、Agent、AIGC应用）：每个词最终保留的岗位 ≤11 条，却带来约 1970 条噪声
+keywords:
+  - AIGC产品经理
+  - 多模态产品经理
+  - AI短剧产品经理
+  - AIGC短剧产品经理
+  - AI内容产品经理
+  - AIGC视频产品经理
+  - AI创作产品经理
+  - AI漫剧产品经理
+  - AIGC工具产品经理
+  - AIGC平台产品经理
+  - 数字人视频产品经理
+  - 生成式AI产品经理
+  - 内容生成产品经理
+  - AIGC产品专家
+  - AIGC产品负责人
+  - AI产品经理
+
+# 按薪资区间上限比较；0 表示不限
+salary_floor_k: 0
+
+# BOSS 的通用技能标签，太泛，不当作信号
+ignore_skills: [内容产品, 直播/视频产品, 内容/社区产品, 社区产品]
+strip_from_text: [视频面试]
+
+patterns:
+  pm:
+    in: title
+    regex: '产品(经理|专家|负责人|总监|助理|主管|owner|leader|合伙人|实习|规划|策划|架构师|官|VP|lead)|策略产品|AI产品$|\bPM\b|产品\s*[（(\-－—/]|产品\s*$'
+  non_pm:
+    in: title
+    regex: '销售|商务|BD|招商|工程师|算法|研发(?!.*产品)|开发(?!.*产品经理)|测试|运营|设计师|讲师|顾问|分析师|训练师|标注|剪辑师|编导|导演|编剧|动画师|美术|原画|主播|客服|HR|招聘|实施'
+  strong_pm:
+    in: title
+    regex: '产品(经理|专家|负责人|总监)'
+  ai: '(?<![A-Za-z])AI(?![A-Za-z])|AIGC|人工智能|大模型|LLM|GPT|Agent|智能体|机器学习|深度学习|NLP|生成式|多模态|DeepSeek|ChatGPT|Copilot|RAG|Prompt|Claude|Gemini|通义|豆包|文心|Kimi|Sora|可灵|即梦|Seedance|Midjourney|Stable ?Diffusion|ComfyUI|LoRA|模型'
+  ai_industry:
+    in: industry
+    regex: '^人工智能$'
+  # 本身就意味着生成式内容的词
+  strong: 'AIGC|生成|文生|图生|数字人|虚拟人|漫剧|多模态|ComfyUI|Stable ?Diffusion|Midjourney|Sora|可灵|即梦|Seedance|LoRA|AI\s*(短剧|视频|绘|作图|设计|创作|写作|配音|音乐|漫画|动漫|动画|图片|图像|内容|剪辑|生图|生视频)'
+  content:
+    regex: '视频|图像|图片|影像|照片|绘画|绘图|画图|创作|创意|短剧|剧本|剧情|分镜|影视|动漫|动画|漫画|配音|语音合成|TTS|音乐|音频|剪辑|特效|修图|美颜|素材|写作|文案|小说|内容|设计工具|3D(?!S)|直播|短视频|二次元|(?<![A-Za-z])IP(?![A-Za-z])'
+    case_sensitive: true
+  generic_title:
+    in: title_clean
+    regex: '^(高级|资深|中级|初级|中高级|大厂-?)?\s*(AI|人工智能|AIGC)?\s*(应用|创新)?\s*(产品)(经理|专家|负责人|总监|助理|主管|leader)?(岗)?$'
+  generic_skills:
+    skills_within: [AI产品, 机器学习类AI, 语义类AI, AI, ai, AI产品经理, C端产品, 用户/功能产品, 0-1产品, 从0-1产品落地]
+
+# 命中词列：这几个 pattern 在职位名+标签里匹配到的原文
+hit_patterns: [strong, ai, content]
+
+defs:
+  is_pm: pm and not (non_pm and not strong_pm)
+  ai_any: ai or ai_industry
+  aigc: strong or (ai_any and content)
+
+buckets:
+  - name: 删-非产品经理岗（含AIGC信号）
+    when: not is_pm and aigc
+    note: 不是产品经理，但和 AIGC 有关（设计师/编导/运营/算法等）
+  - name: 删-非产品经理岗
+    when: not is_pm
+    note: 销售、工程师、运营、市场等
+  - name: 保留-AIGC方向PM
+    when: aigc
+    detail: true
+    note: 职位名/技能标签有 AIGC、生成、视频/图像/短剧/数字人等 + AI 信号
+  - name: 待定A1-泛称AI产品经理看不出方向
+    when: ai_any and generic_title and generic_skills
+    detail: true
+    note: 只写了「AI产品经理」之类，要看 JD 才知道做什么
+  - name: 删-AI但方向非内容生成
+    when: ai_any
+    note: AI 岗，但写明的方向是 Agent/B端/行业/硬件/座舱/金融等
+  - name: 待定B-内容/视频相关但无AI信号
+    when: content
+    detail: true
+    note: 短剧分发、视频平台、内容产品等，没有 AI 字样
+  - name: 删-PM但无AI也无内容信号
+    when: true
+    note: 普通产品经理（SaaS/电商/硬件/实物商品等）

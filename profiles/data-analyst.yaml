@@ -1,0 +1,33 @@
+# 示例：数据分析方向。复制这份改成你自己的方向。
+name: 数据分析师
+
+cities: [北京, 上海]
+keywords: [数据分析师, 商业分析师, BI分析师]
+
+# 按薪资区间上限比较；0 表示不限
+salary_floor_k: 20
+
+patterns:
+  analyst:
+    in: title
+    regex: '数据分析|商业分析|经营分析|BI|数据运营'
+  not_role:
+    in: title
+    regex: '实习|销售|讲师|培训|客服'
+  senior:
+    in: title
+    regex: '高级|资深|专家|负责人|主管'
+  tools: 'SQL|Python|Tableau|Power ?BI|Hive|Spark'
+
+defs:
+  target: analyst and not not_role
+
+buckets:
+  - name: 要-资深分析岗
+    when: target and senior
+    detail: true
+  - name: 要-分析岗
+    when: target
+    detail: true
+  - name: 不要
+    when: true
