@@ -1,6 +1,8 @@
 """本地 SQLite：每个岗位一行，列表信息 + 分桶 + 详情状态 + JD。"""
 import json
+import re
 import sqlite3
+import unicodedata
 from datetime import datetime
 
 SCHEMA = """
@@ -20,6 +22,16 @@ create table if not exists jobs (
 
 # 详情失败超过这个次数就不再自动开：失败重试几乎不会成功，只会多碰风控
 MAX_DETAIL_ATTEMPTS = 2
+
+
+# BOSS 会把 JD 里的部分常用字换成长得一样的康熙部首（「能⼒」里的「⼒」是 U+2F12），
+# 肉眼看不出来，但搜「能力」搜不到。NFKC 能还原它们；「⾤」NFKC 会变成「釆」，实际是「采」。
+_RADICAL = re.compile(r"[\u2f00-\u2fdf]")
+
+
+def normalize_text(text):
+    return _RADICAL.sub(lambda m: "采" if m.group() == "⾤" else unicodedata.normalize("NFKC", m.group()),
+                        text or "")
 
 
 def now():

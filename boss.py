@@ -169,9 +169,9 @@ def cmd_import(args, cfg, rules, conn):
                 kw = (rec.get("_meta") or {}).get("kw", "")
                 store.upsert_listing(conn, job, kw, rules)
                 n += 1
-                if rec.get("jd_full"):
-                    store.save_detail(conn, job["job_id"], "ok", rec["jd_full"], "import",
-                                      rules.hits(rec["jd_full"]))
+                jd_text = store.normalize_text(rec.get("jd_full"))
+                if jd_text:
+                    store.save_detail(conn, job["job_id"], "ok", jd_text, "import", rules.hits(jd_text))
                     jd += 1
     print(f"导入 {n} 行（其中带 JD {jd}），库里现在 {count(conn)} 个岗位")
 
@@ -198,7 +198,25 @@ def count(conn):
     return conn.execute("select count(*) from jobs").fetchone()[0]
 
 
+def export_json(out, cfg, conn):
+    """给 viewer/jd-viewer.html 导入用：只要已抓到 JD 的岗位。"""
+    rows = conn.execute("select * from jobs where detail_status='ok' order by city, title").fetchall()
+    jobs = [{
+        "job_id": r["job_id"], "title": r["title"], "company": r["company"], "city": r["city"],
+        "district": r["district"], "industry": r["industry"], "salary_desc": r["salary"],
+        "experience": r["experience"], "degree": r["degree"],
+        "skills": json.loads(r["skills"] or "[]"), "bucket": r["bucket"],
+        "jd_full": store.normalize_text(r["jd"]),
+    } for r in rows]
+    collected = max((r["jd_at"][:10] for r in rows), default="")
+    out.write_text(json.dumps({"name": cfg.get("name", ""), "collected_at": collected, "jobs": jobs},
+                              ensure_ascii=False), encoding="utf-8")
+    print(f"已导出 {len(jobs)} 个带 JD 的岗位 → {out}（用 viewer/jd-viewer.html 打开导入）")
+
+
 def cmd_export(args, cfg, rules, conn):
+    if args.out and args.out.lower().endswith(".json"):
+        return export_json(Path(args.out), cfg, conn)
     from openpyxl import Workbook
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
     from openpyxl.styles import Font
@@ -293,7 +311,7 @@ def main():
     p.add_argument("files", nargs="+")
     add("reclassify", cmd_reclassify, "改了规则后，对库里所有岗位重新分桶")
     add("stats", cmd_stats, "看库里各分类数量和详情进度")
-    p = add("export", cmd_export, "导出 xlsx")
+    p = add("export", cmd_export, "导出 xlsx；--out 以 .json 结尾时导出给 JD 阅读页导入的 JSON")
     p.add_argument("--out")
 
     args = ap.parse_args()

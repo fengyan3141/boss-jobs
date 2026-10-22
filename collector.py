@@ -17,6 +17,8 @@ from urllib.parse import quote
 
 from DrissionPage import ChromiumOptions, ChromiumPage
 
+from store import normalize_text
+
 JOBLIST = "zpgeek/search/joblist"
 DETAIL_API = "wapi/zpgeek"
 SEARCH_URL = "https://www.zhipin.com/web/geek/job?query={kw}&city={city}"
@@ -43,7 +45,7 @@ def html_to_text(value):
     text = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</li>", "\n", str(value or ""))
     text = re.sub(r"<[^>]+>", "", text)
     lines = (re.sub(r"[ \t]+", " ", unescape(line)).strip() for line in text.splitlines())
-    return "\n".join(line for line in lines if line)
+    return normalize_text("\n".join(line for line in lines if line))
 
 
 def body_of(pkt):

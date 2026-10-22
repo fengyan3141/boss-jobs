@@ -51,6 +51,9 @@ python3 boss.py reclassify profiles/aigc-pm.yaml
 # 上次中途停了，给"要详情但还没抓到"的岗位补抓
 python3 boss.py details profiles/aigc-pm.yaml
 
+# 导出 JSON，给 JD 阅读页导入（只含已抓到 JD 的岗位）
+python3 boss.py export profiles/aigc-pm.yaml --out 岗位.json
+
 # 导入以前抓的 jsonl（BOSS 原始列表字段，可以带 jd_full）
 python3 boss.py import profiles/aigc-pm.yaml old/*.jsonl
 ```
@@ -60,6 +63,17 @@ python3 boss.py import profiles/aigc-pm.yaml old/*.jsonl
 整个过程只用 2 个标签页（列表页和详情页），详情页在后台打开，不会抢焦点，窗口可以最小化。只有遇到安全校验页时才会切到前台，等校验自动通过。
 
 数据库默认在 `~/.boss-jobs/data/<配置文件名>.sqlite`，可以在配置里写 `db:`，或者用环境变量 `BOSS_DATA_DIR` 换位置。再跑同一个配置时，已经见过的岗位不会重复处理；详情失败两次的岗位不会再自动打开。
+
+## JD 阅读页
+
+`viewer/jd-viewer.html` 是一个单文件的岗位阅读页，双击就能在浏览器打开，不用联网也不用装东西：
+
+- **录入**：在「录入数据」里拖入上面导出的 JSON；或者在 BOSS 上复制职位描述，粘贴到页面里逐条添加。
+- **浏览**：概览页有高频要求词、城市、经验和学历分布；岗位浏览页可以按城市、薪资、标签筛选，也能搜关键词；投递管理页可以把岗位标成想看、已投、面试或已拒。
+- **清洗**：导入或粘贴时会自动清掉「微信」「举报」、招聘者署名、资质说明、水印字，并把 BOSS 换进来的康熙部首（「能⼒」的「⼒」）还原成常用字。
+- **分享**：数据只保存在当前浏览器里。点「保存为单文件」会生成一个带数据的 HTML，发给别人打开就能看。
+
+标签和高频词表是按 AIGC 产品经理方向写的，用在其他方向时，改页面里的 `TAG_GROUPS` 和 `VOCAB`。
 
 ## 写一份自己的方向配置
 
